@@ -378,6 +378,11 @@ extension ReducerMacro: MemberMacro {
       ) {
         decls.append(
           """
+          #if swift(<5.10)
+          @MainActor(unsafe)
+          #else
+          @preconcurrency @MainActor
+          #endif
           \(access)static func scope(\
           _ store: ComposableArchitecture.Store<Self.State, Self.Action>\
           ) -> CaseScope {
@@ -498,7 +503,16 @@ private enum ReducerCase {
         let parameter = parameterClause.parameters.first,
         parameter.type.is(IdentifierTypeSyntax.self) || parameter.type.is(MemberTypeSyntax.self)
       {
-        return "case \(element.suffixed("Action").type.trimmedDescription)"
+        if let type = parameter.type.as(IdentifierTypeSyntax.self),
+          type.isEphemeral,
+          let generics = type.genericArgumentClause?.arguments,
+          generics.count == 1,
+          let generic = generics.first?.argument.trimmedDescription
+        {
+          return "case \(element.name)(\(generic))"
+        } else {
+          return "case \(element.suffixed("Action").type.trimmedDescription)"
+        }
       } else {
         return "case \(element.name)(Swift.Never)"
       }
@@ -644,7 +658,7 @@ private enum ReducerCase {
   }
 }
 
-extension Array where Element == ReducerCase {
+extension [ReducerCase] {
   init(members: MemberBlockItemListSyntax) {
     self = members.flatMap {
       if let enumCaseDecl = $0.decl.as(EnumCaseDeclSyntax.self) {
@@ -671,7 +685,7 @@ extension Array where Element == ReducerCase {
   }
 }
 
-extension Array where Element == String {
+extension [String] {
   var withCasePathsQualified: Self {
     self.flatMap { [$0, "CasePaths.\($0)"] }
   }

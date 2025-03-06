@@ -230,7 +230,7 @@ extension ObservableStateMacro: MemberMacro {
       return try enumExpansion(of: node, providingMembersOf: declaration, in: context)
     }
 
-    guard let identified = declaration.asProtocol(NamedDeclSyntax.self) else {
+    guard let identified = declaration.asProtocol((any NamedDeclSyntax).self) else {
       return []
     }
 
@@ -262,7 +262,7 @@ extension ObservableStateMacro: MemberMacro {
   }
 }
 
-extension Array where Element == ObservableStateCase {
+extension [ObservableStateCase] {
   init(members: MemberBlockItemListSyntax) {
     var tag = 0
     self.init(members: members, tag: &tag)

@@ -37,15 +37,23 @@ public struct NavigationStackStore<State, Action, Root: View, Destination: View>
   /// Creates a navigation stack with a store of stack state and actions.
   ///
   /// - Parameters:
-  ///   - path: A store of stack state and actions to power this stack.
+  ///   - store: A store of stack state and actions to power this stack.
   ///   - root: The view to display when the stack is empty.
   ///   - destination: A view builder that defines a view to display when an element is appended to
   ///     the stack's state. The closure takes one argument, which is a store of the value to
   ///     present.
+  ///   - fileID: The fileID.
+  ///   - filePath: The filePath.
+  ///   - line: The line.
+  ///   - column: The column.
   public init(
     _ store: Store<StackState<State>, StackAction<State, Action>>,
     @ViewBuilder root: () -> Root,
-    @ViewBuilder destination: @escaping (_ store: Store<State, Action>) -> Destination
+    @ViewBuilder destination: @escaping (_ store: Store<State, Action>) -> Destination,
+    fileID: StaticString = #fileID,
+    filePath: StaticString = #filePath,
+    line: UInt = #line,
+    column: UInt = #column
   ) {
     self.root = root()
     self.destination = { component in
@@ -53,7 +61,17 @@ public struct NavigationStackStore<State, Action, Root: View, Destination: View>
       return destination(
         store
           .scope(
-            id: store.id(state: \.[id:component.id]!, action: \.[id:component.id]),
+            id: store.id(
+              state:
+                \.[
+                  id: component.id,
+                  fileID: _HashableStaticString(
+                    rawValue: fileID),
+                  filePath: _HashableStaticString(
+                    rawValue: filePath), line: line, column: column
+                ]!,
+              action: \.[id: component.id]
+            ),
             state: ToState {
               element = $0[id: component.id] ?? element
               return element
@@ -75,16 +93,24 @@ public struct NavigationStackStore<State, Action, Root: View, Destination: View>
   /// Creates a navigation stack with a store of stack state and actions.
   ///
   /// - Parameters:
-  ///   - path: A store of stack state and actions to power this stack.
+  ///   - store: A store of stack state and actions to power this stack.
   ///   - root: The view to display when the stack is empty.
   ///   - destination: A view builder that defines a view to display when an element is appended to
   ///     the stack's state. The closure takes one argument, which is the initial enum state to
   ///     present. You can switch over this value and use ``CaseLet`` views to handle each case.
+  ///   - fileID: The fileID.
+  ///   - filePath: The filePath.
+  ///   - line: The line.
+  ///   - column: The column.
   @_disfavoredOverload
   public init<D: View>(
     _ store: Store<StackState<State>, StackAction<State, Action>>,
     @ViewBuilder root: () -> Root,
-    @ViewBuilder destination: @escaping (_ initialState: State) -> D
+    @ViewBuilder destination: @escaping (_ initialState: State) -> D,
+    fileID: StaticString = #fileID,
+    filePath: StaticString = #filePath,
+    line: UInt = #line,
+    column: UInt = #column
   ) where Destination == SwitchStore<State, Action, D> {
     self.root = root()
     self.destination = { component in
@@ -92,7 +118,17 @@ public struct NavigationStackStore<State, Action, Root: View, Destination: View>
       return SwitchStore(
         store
           .scope(
-            id: store.id(state: \.[id:component.id]!, action: \.[id:component.id]),
+            id: store.id(
+              state:
+                \.[
+                  id: component.id,
+                  fileID: _HashableStaticString(
+                    rawValue: fileID),
+                  filePath: _HashableStaticString(
+                    rawValue: filePath), line: line, column: column
+                ]!,
+              action: \.[id: component.id]
+            ),
             state: ToState {
               element = $0[id: component.id] ?? element
               return element
